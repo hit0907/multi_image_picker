@@ -45,6 +45,9 @@ import android.provider.OpenableColumns;
 import android.os.Environment;
 import android.provider.MediaStore;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import androidx.annotation.NonNull;
 import androidx.exifinterface.media.ExifInterface;
 import androidx.core.app.ActivityCompat;
@@ -90,12 +93,14 @@ public class MultiImagePickerPlugin implements
     private final BinaryMessenger messenger;
     private Result pendingResult;
     private MethodCall methodCall;
+    private Handler handler;
 
     private MultiImagePickerPlugin(Activity activity, Context context, MethodChannel channel, BinaryMessenger messenger) {
         this.activity = activity;
         this.context = context;
         this.channel = channel;
         this.messenger = messenger;
+        this.handler = new Handler(Looper.getMainLooper());
     }
 
     @Override
@@ -335,8 +340,16 @@ public class MultiImagePickerPlugin implements
             final String identifier = call.argument("identifier");
             final int quality = (int) call.argument("quality");
             GetImageTask task = new GetImageTask(this.activity, this.messenger, identifier, quality);
-            task.execute();
-            finishWithSuccess();
+//            task.execute();
+//            finishWithSuccess();
+
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    task.execute();
+                    finishWithSuccess();
+                }
+            });
 
         } else if (REQUEST_THUMBNAIL.equals(call.method)) {
             final String identifier = call.argument("identifier");
@@ -344,8 +357,15 @@ public class MultiImagePickerPlugin implements
             final int height = (int) call.argument("height");
             final int quality = (int) call.argument("quality");
             GetThumbnailTask task = new GetThumbnailTask(this.activity, this.messenger, identifier, width, height, quality);
-            task.execute();
-            finishWithSuccess();
+
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    task.execute();
+                    finishWithSuccess();
+                }
+            });
+
         } else if (REQUEST_METADATA.equals(call.method)) {
             final String identifier = call.argument("identifier");
 
